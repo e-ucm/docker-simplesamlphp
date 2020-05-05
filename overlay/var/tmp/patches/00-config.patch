@@ -1,0 +1,76 @@
+diff -u -r simplesamlphp-1.18.5/config-templates/config.php simplesamlphp-1.18.5.updated/config-templates/config.php
+--- simplesamlphp-1.18.5/config-templates/config.php	2020-03-19 09:56:23.000000000 +0100
++++ simplesamlphp-1.18.5.updated/config-templates/config.php	2020-04-09 16:53:21.910933503 +0200
+@@ -62,11 +62,13 @@
+      * When specified as a relative path, this is relative to the SimpleSAMLphp
+      * root directory.
+      */
+-    'certdir' => 'cert/',
+-    'loggingdir' => 'log/',
+-    'datadir' => 'data/',
++    'certdir' => '/etc/simplesamlphp/certs/',
++    'loggingdir' => '/var/lib/simplesamlphp/log/',
++    'datadir' => '/var/lib/simplesamlphp/data/',
+     'tempdir' => '/tmp/simplesaml',
+ 
++    'attributenamemapdir' => '/etc/simplesamlphp/attributemap/',
++
+     /*
+      * Some information about the technical persons running this installation.
+      * The email address will be used as the recipient address for error reports, and
+@@ -293,7 +295,7 @@
+      *
+      */
+     'logging.level' => SimpleSAML\Logger::NOTICE,
+-    'logging.handler' => 'syslog',
++    'logging.handler' => 'errorlog',
+ 
+     /*
+      * Specify the format of the logs. Its use varies depending on the log handler used (for instance, you cannot
+@@ -578,7 +580,7 @@
+      * Options to override the default settings for php sessions.
+      */
+     'session.phpsession.cookiename' => 'SimpleSAML',
+-    'session.phpsession.savepath' => null,
++    'session.phpsession.savepath' => '/var/lib/simplesamlphp/sessions',
+     'session.phpsession.httponly' => true,
+ 
+     /*
+@@ -699,12 +701,14 @@
+      *     ],
+      * ],
+      *
++     * or:
++     * 'memcache_store.servers' => [
++     *     [
++     *         ['hostname' => 'localhost'],
++     *     ],
++     * ],
+      */
+-    'memcache_store.servers' => [
+-        [
+-            ['hostname' => 'localhost'],
+-        ],
+-    ],
++    'memcache_store.servers' => [],
+ 
+     /*
+      * This value allows you to set a prefix for memcache-keys. The default
+@@ -714,7 +718,7 @@
+      * than one instance is using memcache, you probably want to assign
+      * a unique value per instance to this setting to avoid data collision.
+      */
+-    'memcache_store.prefix' => '',
++    'memcache_store.prefix' => 'SimpleSAMLphp',
+ 
+     /*
+      * This value is the duration data should be stored in memcache. Data
+@@ -1051,7 +1055,7 @@
+      * This option allows you to specify a directory for your metadata outside of the standard metadata directory
+      * included in the standard distribution of the software.
+      */
+-    'metadatadir' => 'metadata',
++    'metadatadir' => '/etc/simplesamlphp/metadata/',
+ 
+     /*
+      * This option configures the metadata sources. The metadata sources is given as an array with
