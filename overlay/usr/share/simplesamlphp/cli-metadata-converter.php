@@ -97,7 +97,6 @@ if ( isset($options['f']) ) {
     $xmldata = file_get_contents('php://stdin');
 }
 
-echo "<?php\n";
 $metadata=metadataConverter($xmldata);
 $metadata = $metadata['saml20-idp-remote'];
 print_r($metadata);

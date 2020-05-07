@@ -122,7 +122,7 @@ declare -x SIMPLESAMLPHP_SP_CERT_SUBJ
 [[ -z "${SIMPLESAMLPHP_SP_CERT_SUBJ}" ]] && SIMPLESAMLPHP_SP_CERT_SUBJ="/C=ES/ST=Madrid/L=Madrid/O=My Organization/OU=My Unit/CN=simplesamlphp.example.org"
 
 declare -x SIMPLESAMLPHP_SP_IDP_METADATA_URL
-[[ -z "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" ]] && SIMPLESAMLPHP_SP_IDP_METADATA_URL="https://sso.example.org/saml/descriptor"
+[[ -z "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" ]] && SIMPLESAMLPHP_SP_IDP_METADATA_URL=""
 
 declare -x SIMPLESAMLPHP_IDP
 [[ -z "${SIMPLESAMLPHP_IDP}" ]] && SIMPLESAMLPHP_IDP="https://sso.example.org/"

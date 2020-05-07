@@ -213,13 +213,23 @@ function simplesamlphp_configure_sp()
 
     if [[ ! -e "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php" ]]; then
         echo "Generating SimpleSAMLphp Idp remote metadata"
-        # Using --insecure to allow to use self-signed certificates
-        curl --max-time 10 --insecure -s "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" | php /usr/share/simplesamlphp/cli-metadata-converter.php > "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php"
-        SIMPLESAMLPHP_IDP=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_keys(\$metadata)[0];")
-        local sp_name_for_idp=$( echo "${SIMPLESAMLPHP_IDP}" | tr '/:.' '_')
-        local sp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/authsources.php'; echo array_key_exists('${sp_name_for_idp}', \$config) ? 'true' : 'false';")
-        if [[ "$sp_configured" != "true" ]]; then
-            cat <<EOF >> "${SIMPLESAMLPHP_CONF_DIR}/authsources.php"
+        cat <<EOF > "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php"
+<?php
+\$metadata = [];
+EOF
+    fi
+
+    if [[ ! -z "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" ]]; then
+        local idp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_key_exists('${SIMPLESAMLPHP_SP_IDP_METADATA_URL}', \$metadata) ? 'true' : 'false';")
+        if [[ "$idp_configured" != "true" ]]; then
+            echo "Getting SAML 2 IdP metadata from ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
+            # Using --insecure to allow to use self-signed certificates
+            curl --max-time 20 --insecure -s "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" | php /usr/share/simplesamlphp/cli-metadata-converter.php >> "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php"
+            SIMPLESAMLPHP_IDP=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_keys(\$metadata)[0];")
+            local sp_name_for_idp=$( echo "${SIMPLESAMLPHP_IDP}" | tr '/:.' '_')
+            local sp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/authsources.php'; echo array_key_exists('${sp_name_for_idp}', \$config) ? 'true' : 'false';")
+            if [[ "$sp_configured" != "true" ]]; then
+                cat <<EOF >> "${SIMPLESAMLPHP_CONF_DIR}/authsources.php"
 \$config['${sp_name_for_idp}'] = [
     'saml:SP',
     'idp' => '${SIMPLESAMLPHP_IDP}',
@@ -229,6 +239,7 @@ function simplesamlphp_configure_sp()
     'sign.logout' => ${SIMPLESAMLPHP_SIGN_LOGOUT_REQUESTS},
 ];
 EOF
+            fi
         fi
     fi
 }
