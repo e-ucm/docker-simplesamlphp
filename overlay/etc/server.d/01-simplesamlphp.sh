@@ -3,17 +3,17 @@
 function simplesamlphp_setup()
 {
 
-    if [[ ! -d "/etc/simplesamlphp/attributemap" ]]; then
-        cp -r /usr/share/simplesamlphp/attributemap /etc/simplesamlphp
+    if [[ ! -d "${SIMPLESAMLPHP_CONF_DIR}/attributemap" ]]; then
+        cp -r "${SIMPLESAMLPHP_HOME}/attributemap" "${SIMPLESAMLPHP_CONF_DIR}"
     fi
 
-    if [[ ! -f "/etc/simplesamlphp/authsources.php" ]]; then
-        cp -r /usr/share/simplesamlphp/config-templates/authsources.php /etc/simplesamlphp
+    if [[ ! -f "${SIMPLESAMLPHP_CONF_DIR}/authsources.php" ]]; then
+        cp -r "${SIMPLESAMLPHP_HOME}/config-templates/authsources.php" "${SIMPLESAMLPHP_CONF_DIR}"
     fi
 
-    cp -r /usr/share/simplesamlphp/config-templates/config.php /etc/simplesamlphp
+    cp -r "${SIMPLESAMLPHP_HOME}/config-templates/config.php" "${SIMPLESAMLPHP_CONF_DIR}"
 
-    simplesamlphp_configure "/etc/simplesamlphp/config.php";
+    simplesamlphp_configure "${SIMPLESAMLPHP_CONF_DIR}/config.php";
 
 }
 
@@ -117,14 +117,14 @@ function simplesamlphp_configure()
 function simplesamlphp_setup_apache2()
 {
 
-    cp /usr/share/simplesamlphp/config-templates/apache2.conf /etc/simplesamlphp;
+    cp "${SIMPLESAMLPHP_HOME}/config-templates/apache2.conf" "${SIMPLESAMLPHP_CONF_DIR}";
 
     if [[ ! -f "/etc/apache2/conf-available/simplesamlphp.conf" ]]; then
-        ln -s /etc/simplesamlphp/apache2.conf /etc/apache2/conf-available/simplesamlphp.conf;
+        ln -s "${SIMPLESAMLPHP_CONF_DIR}/apache2.conf" /etc/apache2/conf-available/simplesamlphp.conf;
     fi
 
 
-    simplesamlphp_setup_apache2_configure "/etc/simplesamlphp/apache2.conf" "/etc/apache2/conf-enabled/trust-proxy.conf"
+    simplesamlphp_setup_apache2_configure "${SIMPLESAMLPHP_CONF_DIR}/apache2.conf" "/etc/apache2/conf-enabled/trust-proxy.conf"
 }
 
 function simplesamlphp_setup_apache2_configure()
@@ -166,8 +166,8 @@ function simplesamlphp_setup_apache2_configure()
 function simplesamlphp_setup_php_trust_forwarded_headers()
 {
 
-    cp /usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php /etc/simplesamlphp;
-    simplesamlphp_setup_php_trust_forwarded_headers_configure "/etc/simplesamlphp/trust-forwarded-headers.php"
+    cp "${SIMPLESAMLPHP_HOME}/config-templates/trust-forwarded-headers.php" "${SIMPLESAMLPHP_CONF_DIR}";
+    simplesamlphp_setup_php_trust_forwarded_headers_configure "${SIMPLESAMLPHP_CONF_DIR}/trust-forwarded-headers.php"
 }
 
 function simplesamlphp_setup_php_trust_forwarded_headers_configure()
@@ -187,6 +187,53 @@ function simplesamlphp_setup_php_trust_forwarded_headers_configure()
 
 }
 
+function simplesamlphp_configure_sp()
+{
+    if [[ ! -d "${SIMPLESAMLPHP_CONF_DIR}/certs" ]]; then
+        mkdir "${SIMPLESAMLPHP_CONF_DIR}/certs"
+    fi
+
+    if [[ ! -e "${SIMPLESAMLPHP_CONF_DIR}/certs/${SIMPLESAMLPHP_SP_PRIVATE_KEY}" || ! -e "${SIMPLESAMLPHP_SP_PRIVATE_KEY}" ]]; then
+        pushd ${SIMPLESAMLPHP_CONF_DIR}/certs > /dev/null 2>&1
+        echo "Generating SSL certificates for the SimpleSAMLphp SP"
+        openssl req -x509 \
+            -nodes -newkey rsa:2048 -keyout ${SIMPLESAMLPHP_SP_PRIVATE_KEY} \
+            -out ${SIMPLESAMLPHP_SP_CERT} \
+            -days 3652 \
+            -subj "${SIMPLESAMLPHP_SP_CERT_SUBJ}"
+
+        chown root:www-data example.key
+        chmod 640 example.key
+        popd > /dev/null 2>&1
+    fi
+
+    if [[ ! -d "${SIMPLESAMLPHP_CONF_DIR}/metadata" ]]; then
+        mkdir "${SIMPLESAMLPHP_CONF_DIR}/metadata"
+    fi
+
+    if [[ ! -e "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php" ]]; then
+        echo "Generating SimpleSAMLphp Idp remote metadata"
+        # Using --insecure to allow to use self-signed certificates
+        curl --max-time 10 --insecure -s "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" | php /usr/share/simplesamlphp/cli-metadata-converter.php > "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php"
+        SIMPLESAMLPHP_IDP=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_keys(\$metadata)[0];")
+        local sp_name_for_idp=$( echo "${SIMPLESAMLPHP_IDP}" | tr '/:.' '_')
+        local sp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/authsources.php'; echo array_key_exists('${sp_name_for_idp}', \$config) ? 'true' : 'false';")
+        if [[ "$sp_configured" != "true" ]]; then
+            cat <<EOF >> "${SIMPLESAMLPHP_CONF_DIR}/authsources.php"
+\$config['${sp_name_for_idp}'] = [
+    'saml:SP',
+    'idp' => '${SIMPLESAMLPHP_IDP}',
+    'privatekey' => '${SIMPLESAMLPHP_SP_PRIVATE_KEY}',
+    'certificate' => '${SIMPLESAMLPHP_SP_CERT}',	
+    'sign.authnrequest' => ${SIMPLESAMLPHP_SIGN_AUTHN_REQUESTS},
+    'sign.logout' => ${SIMPLESAMLPHP_SIGN_LOGOUT_REQUESTS},
+];
+EOF
+        fi
+    fi
+}
+
 simplesamlphp_setup
 simplesamlphp_setup_apache2
 simplesamlphp_setup_php_trust_forwarded_headers
+simplesamlphp_configure_sp
