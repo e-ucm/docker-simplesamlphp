@@ -14,7 +14,6 @@ services:
     hostname: socket-proxy.internal.test
     networks:
       default:
-        ipv4_address: 172.31.0.2
         aliases:
           - socket-proxy.internal.test
     volumes:
