@@ -193,7 +193,7 @@ function simplesamlphp_configure_sp()
         mkdir "${SIMPLESAMLPHP_CONF_DIR}/certs"
     fi
 
-    if [[ ! -e "${SIMPLESAMLPHP_CONF_DIR}/certs/${SIMPLESAMLPHP_SP_PRIVATE_KEY}" || ! -e "${SIMPLESAMLPHP_SP_PRIVATE_KEY}" ]]; then
+    if [[ ! -e "${SIMPLESAMLPHP_CONF_DIR}/certs/${SIMPLESAMLPHP_SP_PRIVATE_KEY}" ]] && [[ ! -e "${SIMPLESAMLPHP_SP_PRIVATE_KEY}" ]]; then
         pushd ${SIMPLESAMLPHP_CONF_DIR}/certs > /dev/null 2>&1
         echo "Generating SSL certificates for the SimpleSAMLphp SP"
         openssl req -x509 \
