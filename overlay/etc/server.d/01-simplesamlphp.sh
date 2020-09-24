@@ -141,7 +141,7 @@ function simplesamlphp_setup_apache2_configure()
         internal_proxy_ip=$(getent hosts $SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME | cut -d' ' -f1)
         sed -i -E "s|RemoteIPInternalProxy(.*)|RemoteIPInternalProxy ${internal_proxy_ip}|" $simplesamlphp_config_file
         sed -i -E "s|Alias ([^ ]+) (.*)|Alias ${SIMPLESAMLPHP_PATH} \2|" $simplesamlphp_config_file
-        
+
         echo "Define TRUST_PROXY_IP" > $trustproxy_config_file
         echo 'ErrorLogFormat "[%t] [%l] [pid %P] %F: %E: [client %a] %M"' >> $trustproxy_config_file
         echo 'LogFormat "%v:%p %a %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" vhost_combined' >> $trustproxy_config_file
@@ -220,26 +220,50 @@ EOF
     fi
 
     if [[ ! -z "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" ]]; then
-        local idp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_key_exists('${SIMPLESAMLPHP_SP_IDP_METADATA_URL}', \$metadata) ? 'true' : 'false';")
+        local idp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_key_exists('${SIMPLESAMLPHP_SP_IDP_ID}', \$metadata) ? 'true' : 'false';")
         if [[ "$idp_configured" != "true" ]]; then
             echo "Getting SAML 2 IdP metadata from ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
+            local launch_bash_options=$-
+            set +e
             # Using --insecure to allow to use self-signed certificates
-            curl --max-time 20 --insecure -s "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" | php /usr/share/simplesamlphp/cli-metadata-converter.php >> "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php"
-            SIMPLESAMLPHP_IDP=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_keys(\$metadata)[0];")
-            local sp_name_for_idp=$( echo "${SIMPLESAMLPHP_IDP}" | tr '/:.' '_')
-            local sp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/authsources.php'; echo array_key_exists('${sp_name_for_idp}', \$config) ? 'true' : 'false';")
-            if [[ "$sp_configured" != "true" ]]; then
-                cat <<EOF >> "${SIMPLESAMLPHP_CONF_DIR}/authsources.php"
+            local tmp_metadata_file=$(mktemp)
+            curl --max-time 20 --insecure -f -s "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" > ${tmp_metadata_file}
+            local ret_value=$?
+            if [[ ${ret_value} -ne 0 ]]; then
+                echo "There was a problem accessing ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
+                exit 1;
+            fi
+
+            cat ${tmp_metadata_file} | php /usr/share/simplesamlphp/cli-metadata-converter.php >> "${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php"
+            if [[ ${ret_value} -ne 0 ]]; then
+                echo "There was a problem processing SAML metadata from ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
+                exit 1;
+            fi
+            if [[ $launch_bash_options =~ e ]]; then
+                set -e
+            fi
+            SIMPLESAMLPHP_SP_IDP_ID=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_keys(\$metadata)[0];")
+        fi
+        local sp_name_for_idp=${SIMPLESAMLPHP_SP_NAME:-x}
+        if [[ "${sp_name_for_idp}" == "x" ]]; then
+            sp_name_for_idp=$( echo "${SIMPLESAMLPHP_SP_IDP_ID}" | tr '/:.' '_')
+        fi
+        local sp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/authsources.php'; echo array_key_exists('${sp_name_for_idp}', \$config) ? 'true' : 'false';")
+        if [[ "$sp_configured" != "true" ]]; then
+            cat <<EOF >> "${SIMPLESAMLPHP_CONF_DIR}/authsources.php"
 \$config['${sp_name_for_idp}'] = [
     'saml:SP',
-    'idp' => '${SIMPLESAMLPHP_IDP}',
+    'entityID' => '${sp_name_for_idp}',
+    'idp' => '${SIMPLESAMLPHP_SP_IDP_ID}',
     'privatekey' => '${SIMPLESAMLPHP_SP_PRIVATE_KEY}',
-    'certificate' => '${SIMPLESAMLPHP_SP_CERT}',	
+    'certificate' => '${SIMPLESAMLPHP_SP_CERT}',
     'sign.authnrequest' => ${SIMPLESAMLPHP_SIGN_AUTHN_REQUESTS},
     'sign.logout' => ${SIMPLESAMLPHP_SIGN_LOGOUT_REQUESTS},
+    'assertion.encryption' => ${SIMPLESAMLPHP_ENCRYPTED_ASSERTIONS},
+    'redirect.sign' => ${SIMPLESAMLPHP_SIGN_REDIRECTS_REQUESTS},
+    'redirect.validate' => ${SIMPLESAMLPHP_REDIRECT_VALIDATE},
 ];
 EOF
-            fi
         fi
     fi
 }
