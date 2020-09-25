@@ -82,7 +82,7 @@ RUN set -eux; \
 COPY overlay /
 RUN set -eux; \
     cd ${SIMPLESAMLPHP_HOME}; \
-    find /var/tmp/patches -type f -print0 | xargs -0 -n1 patch --verbose -p1 -i; \
+    find /var/tmp/patches/simplesamlphp -type f -print0 | xargs -0 -n1 patch --verbose -p1 -i; \
     a2enmod remoteip; \
     a2enmod headers; \
     rm -fr /tmp/* /var/tmp/*;
