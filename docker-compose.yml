@@ -28,7 +28,7 @@ services:
       SIMPLESAMLPHP_SP_IDP_METADATA_URL: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master/protocol/saml/descriptor"
       SIMPLESAMLPHP_CA_FILE: "/etc/simplesamlphp/ca/rootCA.pem"
       MSMTP_HOST: "mail.${INTERNAL_DOMAIN:-internal.test}"
-      MSMTP_FROM: "no-reply@simplesamlphp.external.test"
+      MSMTP_FROM: "no-reply@simplesamlphp.${EXTERNAL_DOMAIN:-external.test}"
     volumes:
       - "./overlay/etc/entrypoint.d:/etc/entrypoint.d"
       - "./overlay/etc/server.d:/etc/server.d"
@@ -38,7 +38,7 @@ services:
       - "./overlay/usr/share/simplesamlphp/config-templates/apache2.conf:/usr/share/simplesamlphp/config-templates/apache2.conf"
       - "./overlay/usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php:/usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php"
       - "./overlay/usr/share/simplesamlphp/cli.metadata-converter.php:/usr/share/simplesamlphp/cli.metadata-converter.php"
-      - "./overlay/var/tmp/patches:/var/tmp/patches"
+      - "./overlay/var/tmp/patches/simplesamlphp:/var/tmp/patches/simplesamlphp"
       - "./traefik-data/ca:/etc/simplesamlphp/ca"
     labels:
       - "traefik.enable=true"
