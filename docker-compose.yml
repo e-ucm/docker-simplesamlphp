@@ -18,7 +18,7 @@ services:
       SIMPLESAMLPHP_DEBUG_SAML: "true"
       SIMPLESAMLPHP_LOG_LEVEL: "DEBUG"
       SIMPLESAMLPHP_ENABLE_DEFAULT_VHOST: "true"
-      SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME: "traefik.internal.test"
+      SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME: "traefik.${INTERNAL_DOMAIN:-internal.test}"
       SIMPLESAMLPHP_SP_NAME: "sp-test"
       SIMPLESAMLPHP_SIGN_AUTHN_REQUESTS: "true"
       SIMPLESAMLPHP_SIGN_LOGOUT_REQUESTS: "true"
@@ -27,7 +27,7 @@ services:
       SIMPLESAMLPHP_SP_IDP_ID: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master"
       SIMPLESAMLPHP_SP_IDP_METADATA_URL: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master/protocol/saml/descriptor"
       SIMPLESAMLPHP_CA_FILE: "/etc/simplesamlphp/ca/rootCA.pem"
-      MSMTP_HOST: "mail"
+      MSMTP_HOST: "mail.${INTERNAL_DOMAIN:-internal.test}"
       MSMTP_FROM: "no-reply@simplesamlphp.external.test"
     volumes:
       - "./overlay/etc/entrypoint.d:/etc/entrypoint.d"
