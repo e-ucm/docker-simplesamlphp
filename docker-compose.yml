@@ -26,6 +26,7 @@ services:
       SIMPLESAMLPHP_ENCRYPTED_ASSERTIONS: "true"
       SIMPLESAMLPHP_SP_IDP_ID: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master"
       SIMPLESAMLPHP_SP_IDP_METADATA_URL: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master/protocol/saml/descriptor"
+      SIMPLESAMLPHP_CA_FILE: "/etc/simplesamlphp/ca/rootCA.pem"
       MSMTP_HOST: "mail"
       MSMTP_FROM: "no-reply@simplesamlphp.external.test"
     volumes:
@@ -38,6 +39,7 @@ services:
       - "./overlay/usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php:/usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php"
       - "./overlay/usr/share/simplesamlphp/cli.metadata-converter.php:/usr/share/simplesamlphp/cli.metadata-converter.php"
       - "./overlay/var/tmp/patches:/var/tmp/patches"
+      - "./traefik-data/ca:/etc/simplesamlphp/ca"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.simplesamlphp.loadbalancer.server.port=80"

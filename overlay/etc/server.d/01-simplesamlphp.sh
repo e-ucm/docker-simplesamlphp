@@ -227,7 +227,11 @@ EOF
             set +e
             # Using --insecure to allow to use self-signed certificates
             local tmp_metadata_file=$(mktemp)
-            curl --max-time 20 --insecure -f -s "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" > ${tmp_metadata_file}
+            local curl_extra_opts="--insecure"
+            if [[ "${SIMPLESAMLPHP_CA_FILE:-x}" != "x" ]]; then
+                curl_extra_opts="--cacert ${SIMPLESAMLPHP_CA_FILE}"
+            fi
+            curl --max-time 20 -f -s ${curl_extra_opts} "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" > ${tmp_metadata_file}
             local ret_value=$?
             if [[ ${ret_value} -ne 0 ]]; then
                 echo "There was a problem accessing ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
