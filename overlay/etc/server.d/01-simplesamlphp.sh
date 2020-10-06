@@ -202,8 +202,8 @@ function simplesamlphp_configure_sp()
             -days 3652 \
             -subj "${SIMPLESAMLPHP_SP_CERT_SUBJ}"
 
-        chown root:www-data example.key
-        chmod 640 example.key
+        chown root:www-data ${SIMPLESAMLPHP_SP_PRIVATE_KEY}
+        chmod 640 ${SIMPLESAMLPHP_SP_PRIVATE_KEY}
         popd > /dev/null 2>&1
     fi
 
