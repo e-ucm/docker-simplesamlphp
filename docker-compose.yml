@@ -45,9 +45,9 @@ services:
       - "traefik.http.routers.simplesamlphp.tls=true"
 
   traefik:
+    image: traefik:3.1.7
     entrypoint: /etc/entrypoint/entrypoint.sh
     command:
-      - "--"
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
