@@ -150,18 +150,15 @@ services:
       - "traefik.http.routers.sso.tls=true"
 
   mariadb:
-    image: mariadb:10.4.13
+    image: mariadb:10.11.9
     volumes:
-      - ./keycloak-data/mariadb:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
+      - keycloak-mariadb:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=keycloak
       - MYSQL_USER=keycloak
       - MYSQL_PASSWORD=password
-# https://github.com/docker-library/mariadb/issues/261
-# https://github.com/docker-library/mariadb/issues/262
-      - MYSQL_INITDB_SKIP_TZINFO=true
     hostname: mariadb.${INTERNAL_DOMAIN:-internal.test}
     networks:
       default:
@@ -212,3 +209,9 @@ volumes:
       type: none
       o: bind
       device: ./data/simva
+  keycloak-mariadb:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/keycloak/mariadb
