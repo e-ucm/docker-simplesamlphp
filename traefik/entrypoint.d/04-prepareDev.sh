@@ -6,6 +6,7 @@ set -euo pipefail
 : ${JQ_VERSION:="1.7.1"}
 : ${EXTERNAL_DOMAIN:="external.test"}
 : ${INTERNAL_DOMAIN:="internal.test"}
+: ${DNS_SERVERS:=8.8.8.8 8.8.4.4}
 : ${SIMVA_EXTENSIONS:="es.e-ucm.simva.keycloak.fullname-attribute-mapper es.e-ucm.simva.keycloak.policy-attribute-mapper"}
 
 old_cwd=$PWD
@@ -34,5 +35,30 @@ if [[ ! -f "jq" ]]; then
     wget -q -O jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-linux-amd64"
     chmod +x jq
 fi
+
+if [[ ! -d "/simva/coredns" ]]; then
+    mkdir -p /simva/coredns;
+fi
+
+cat > /simva/coredns/Corefile <<EOF
+${INTERNAL_DOMAIN}:53 {
+    forward . 127.0.0.11
+    log
+    errors
+}
+
+${EXTERNAL_DOMAIN}:53 {
+    forward . 127.0.0.11
+    log
+    errors
+}
+
+.:53 {
+    forward . ${DNS_SERVERS}
+    log
+    errors
+    reload 30s
+}
+EOF
 
 cd $old_cwd > /dev/null 2>&1
