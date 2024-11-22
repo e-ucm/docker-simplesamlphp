@@ -1,4 +1,4 @@
-FROM php:7.3.22-apache-buster
+FROM php:8.3.13-apache
 
 # Optimize recurrent builds by using a helper container runing apt-cache
 ARG USE_APT_CACHE
@@ -11,11 +11,23 @@ RUN set -eux; \
 	apt-get update; \
     apt-get install -y --no-install-recommends \
         msmtp \
+        wget \
     ; \
     rm -fr /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
     { \
         echo 'sendmail_path="/usr/bin/msmtp -C /etc/msmtp-php.conf --logfile - -a default -t"'; \
     } > /usr/local/etc/php/conf.d/msmtp.ini
+
+# set recommended PHP.ini settings
+# see https://secure.php.net/manual/en/opcache.installation.php
+RUN set -eux; \
+	docker-php-ext-enable opcache; \
+	{ \
+		echo 'opcache.memory_consumption=128'; \
+		echo 'opcache.interned_strings_buffer=8'; \
+		echo 'opcache.max_accelerated_files=4000'; \
+		echo 'opcache.revalidate_freq=2'; \
+	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 # Configure PHP sessions storage
 RUN set -eux; \
@@ -42,9 +54,12 @@ RUN set -eux; \
 		echo 'html_errors = Off'; \
     } > /usr/local/etc/php/conf.d/error-log.ini
 
-ENV SIMPLESAMLPHP_VERSION 1.18.8
-ENV SIMPLESAMLPHP_URL https://github.com/simplesamlphp/simplesamlphp/releases/download/v${SIMPLESAMLPHP_VERSION}/simplesamlphp-${SIMPLESAMLPHP_VERSION}.tar.gz
-ENV SIMPLESAMLPHP_SHA256 363e32b431c62d174e3c3478b294e9aac96257092de726cbae520a4feee201f1
+ENV SIMPLESAMLPHP_VERSION 2.3.3
+ENV SIMPLESAMLPHP_TYPE full
+ENV SIMPLESAMLPHP_URL https://github.com/simplesamlphp/simplesamlphp/releases/download/v${SIMPLESAMLPHP_VERSION}/simplesamlphp-${SIMPLESAMLPHP_VERSION}-${SIMPLESAMLPHP_TYPE}.tar.gz
+#slim ENV SIMPLESAMLPHP_SHA256 c36eb2daea92d5916dc177451edc980ee812352aff57de743fdb73e46d671d30
+#full
+ENV SIMPLESAMLPHP_SHA256 1001ebb34a52873802de26f762f1f51a9152aacc1a58d3d58828161b9ad3bc12
 ENV SIMPLESAMLPHP_HOME /usr/share/simplesamlphp
 
 # Installation instructions adapted from Debian package
@@ -55,6 +70,7 @@ RUN set -eux; \
     mv "$SIMPLESAMLPHP_HOME-$SIMPLESAMLPHP_VERSION" "$SIMPLESAMLPHP_HOME"; \
     for dir in \
         /etc/simplesamlphp \
+        /var/cache/simplesamlphp \
         /var/lib/simplesamlphp/data \
         /var/lib/simplesamlphp/sessions \
         /var/log/simplesamlphp \
@@ -65,15 +81,17 @@ RUN set -eux; \
         config \
         metadata \
     ; do \
-        rm -fr "$SIMPLESAMLPHP_HOME/${dir}"; \
+        mv "$SIMPLESAMLPHP_HOME/${dir}" "$SIMPLESAMLPHP_HOME/${dir}-templates"; \
+        find "$SIMPLESAMLPHP_HOME/${dir}-templates" -type f -exec bash -c 'filepath={};mv "${filepath}" "${filepath%.*}"' \;; \
     done; \
-    ln -s /etc/simplesamlphp "$SIMPLESAMLPHP_HOME/config"; \
     chgrp www-data \
+        /var/cache/simplesamlphp \
         /var/lib/simplesamlphp/data \
 		/var/lib/simplesamlphp/sessions \
         /var/log/simplesamlphp \
     ; \
 	chmod u=rwx,g=wx,o= \
+        /var/cache/simplesamlphp \
         /var/lib/simplesamlphp/data \
         /var/lib/simplesamlphp/sessions \
 		/var/log/simplesamlphp; \
@@ -85,13 +103,15 @@ RUN set -eux; \
     find /var/tmp/patches/simplesamlphp -type f -print0 | xargs -0 -n1 patch --verbose -p1 -i; \
     a2enmod remoteip; \
     a2enmod headers; \
+    a2enconf remoteip; \
     rm -fr /tmp/* /var/tmp/*;
+#
+#RUN set -eux; \
+#    { \
+#        echo 'auto_prepend_file=/etc/simplesamlphp/trust-forwarded-headers.php'; \
+#    } > /usr/local/etc/php/conf.d/trust-forwarded-headers.ini
 
-RUN set -eux; \
-    { \
-        echo 'auto_prepend_file=/etc/simplesamlphp/trust-forwarded-headers.php'; \
-    } > /usr/local/etc/php/conf.d/trust-forwarded-headers.ini
+VOLUME ["/etc/simplesamlphp", "/var/lib/simplesamlphp", "/var/log/simplesamlphp", "/var/cache/simplesamlphp"]
 
-VOLUME ["/var/lib/simplesamlphp", "/etc/simplesamlphp", "/var/lib/php/sessions"]
-ENTRYPOINT ["/usr/bin/entrypoint"]
-CMD ["/usr/bin/server", "start"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+CMD ["/usr/local/bin/server"]

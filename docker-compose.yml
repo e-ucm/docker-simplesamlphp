@@ -3,40 +3,62 @@ services:
   simplesamlphp:
     build:
       context: .
-    entrypoint: /bin/bash
+    entrypoint:
+      - '/bin/sh'
+      - '-c'
+      - |
+        if [ ! -f "/usr/local/share/ca-certificates/dev.crt" ]; then
+          if [ -f "$${CAROOT}/rootCA.pem" ]; then
+        cp $${CAROOT}/rootCA.pem /usr/local/share/ca-certificates/dev.crt;
+        update-ca-certificates;
+          fi
+        fi
+        # To develop comment out next line
+        /usr/local/bin/entrypoint /usr/local/bin/server
+        # To develop uncomment next line 
+        #/bin/bash
     stdin_open: true
     tty: true
     depends_on:
       - keycloak
     environment:
+      TZ: "Europe/Madrid"
       DEBUG: "true"
-      SIMPLESAMLPHP_PATH: "/simplesamlphp"
+      APACHE2_REMOTEIP_TRUSTPROXY_HOSTNAME: "traefik.${INTERNAL_DOMAIN:-internal.test}"
+      SIMPLESAMLPHP_ENABLE_GLOBAL: "true"
+      SIMPLESAMLPHP_ENABLE_VHOST: "000-default"
+      SIMPLESAMLPHP_BASEURLPATH: "https://simplesamlphp.${EXTERNAL_DOMAIN:-external.test}/simplesamlphp/"
       SIMPLESAMLPHP_ADMIN_PASSWORD: "password"
       SIMPLESAMLPHP_DEBUG_SAML: "true"
       SIMPLESAMLPHP_LOG_LEVEL: "DEBUG"
-      SIMPLESAMLPHP_ENABLE_DEFAULT_VHOST: "true"
-      SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME: "traefik.${INTERNAL_DOMAIN:-internal.test}"
       SIMPLESAMLPHP_SP_NAME: "sp-test"
       SIMPLESAMLPHP_SIGN_AUTHN_REQUESTS: "true"
       SIMPLESAMLPHP_SIGN_LOGOUT_REQUESTS: "true"
       SIMPLESAMLPHP_SIGN_REDIRECTS_REQUESTS: "true"
       SIMPLESAMLPHP_ENCRYPTED_ASSERTIONS: "true"
-      SIMPLESAMLPHP_SP_IDP_ID: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master"
-      SIMPLESAMLPHP_SP_IDP_METADATA_URL: "https://keycloak.${EXTERNAL_DOMAIN:-external.test}/auth/realms/master/protocol/saml/descriptor"
-      SIMPLESAMLPHP_CA_FILE: "/etc/simplesamlphp/ca/rootCA.pem"
+      SIMPLESAMLPHP_SP_IDP_ID: "https://sso.${EXTERNAL_DOMAIN:-external.test}/realms/master"
+      SIMPLESAMLPHP_SP_IDP_METADATA_URL: "https://sso.${EXTERNAL_DOMAIN:-external.test}/realms/master/protocol/saml/descriptor"
       MSMTP_HOST: "mail.${INTERNAL_DOMAIN:-internal.test}"
       MSMTP_FROM: "no-reply@simplesamlphp.${EXTERNAL_DOMAIN:-external.test}"
+      MSMTP_PORT: 1025
+      # Development
+      SIMPLESAMLPHP_CA_FILE: "${CAROOT:-/etc/traefik/ssl/ca}/rootCA.pem"
     volumes:
-      - "./overlay/etc/entrypoint.d:/etc/entrypoint.d"
-      - "./overlay/etc/server.d:/etc/server.d"
-      - "./overlay/usr/bin/entrypoint:/usr/bin/entrypoint"
-      - "./overlay/usr/bin/server:/usr/bin/server"
-      - "./overlay/usr/bin/simplesamlphp-get-sp-metadata:/usr/bin/simplesamlphp-get-sp-metadata"
+      - /etc/localtime:/etc/localtime:ro
+      # Development
+      - "./overlay/etc/entrypoint:/etc/entrypoint"
+      - "./overlay/etc/server:/etc/server"
+      - "./overlay/usr/local/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "./overlay/usr/local/bin/server:/usr/local/bin/server"
+      - "./overlay/usr/local/bin/simplesamlphp-get-sp-metadata:/usr/local/bin/simplesamlphp-get-sp-metadata"
+      - "./overlay/usr/local/bin/wait-for:/usr/local/bin/wait-for"
       - "./overlay/usr/share/simplesamlphp/config-templates/apache2.conf:/usr/share/simplesamlphp/config-templates/apache2.conf"
       - "./overlay/usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php:/usr/share/simplesamlphp/config-templates/trust-forwarded-headers.php"
-      - "./overlay/usr/share/simplesamlphp/cli.metadata-converter.php:/usr/share/simplesamlphp/cli.metadata-converter.php"
+      - "./overlay/usr/share/simplesamlphp/cli-metadata-converter.php:/usr/share/simplesamlphp/cli-metadata-converter.php"
       - "./overlay/var/tmp/patches/simplesamlphp:/var/tmp/patches/simplesamlphp"
-      - "./traefik-data/ca:/etc/simplesamlphp/ca"
+      - apache2-etc:/etc/apache2
+      - simplesamlphp-etc:/etc/simplesamlphp
+      - traefik:/etc/traefik
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.simplesamlphp.loadbalancer.server.port=80"
@@ -215,3 +237,15 @@ volumes:
       type: none
       o: bind
       device: ./data/keycloak/mariadb
+  apache2-etc:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/apache2
+  simplesamlphp-etc:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/simplesamlphp

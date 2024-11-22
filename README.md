@@ -2,7 +2,7 @@
 
 [simplesamlphp](https://simplesamlphp.org/) docker base image for e-UCM projects. This image includes:
 
-- PHP 7.3
+- PHP 8.3
 - SimplesamlPHP
 - MSSMTP configured to be used as sendmail replacement and configured to support PHP mail function.
 
