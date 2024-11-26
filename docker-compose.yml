@@ -226,7 +226,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - simva-dev:/simva
     ports:
-      - "127.1.1.1:53:53/udp"
+      - "${DNS_BIND_IP:-127.1.1.1}:53:53/udp"
     hostname: dns.${INTERNAL_DOMAIN:-internal.test}
     networks:
       default:
