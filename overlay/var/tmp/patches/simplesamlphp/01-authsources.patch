@@ -1,0 +1,14 @@
+diff --git a/config-templates/config.php b/config-templates/config.php
+diff --git a/config-templates/authsources.php b/config-templates/authsources.php
+index cdde34d..56d8479 100644
+--- a/config-templates/authsources.php
++++ b/config-templates/authsources.php
+@@ -27,7 +27,7 @@ $config = [
+         'saml:SP',
+ 
+         // The entity ID of this SP.
+-        'entityID' => 'https://myapp.example.org/',
++        'entityID' => 'default-sp',
+ 
+         // The entity ID of the IdP this SP should contact.
+         // Can be NULL/unset, in which case the user will be shown a list of available IdPs.

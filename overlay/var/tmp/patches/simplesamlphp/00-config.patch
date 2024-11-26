@@ -1,25 +1,34 @@
-diff -u -r simplesamlphp-1.18.5/config-templates/config.php simplesamlphp-1.18.5.updated/config-templates/config.php
---- simplesamlphp-1.18.5/config-templates/config.php	2020-03-19 09:56:23.000000000 +0100
-+++ simplesamlphp-1.18.5.updated/config-templates/config.php	2020-04-09 16:53:21.910933503 +0200
-@@ -62,11 +62,13 @@
+diff --git a/config-templates/config.php b/config-templates/config.php
+index c0bfdd4..e0404f9 100644
+--- a/config-templates/config.php
++++ b/config-templates/config.php
+@@ -67,10 +67,11 @@ $config = [
       * When specified as a relative path, this is relative to the SimpleSAMLphp
       * root directory.
       */
--    'certdir' => 'cert/',
--    'loggingdir' => 'log/',
--    'datadir' => 'data/',
-+    'certdir' => '/etc/simplesamlphp/certs/',
-+    'loggingdir' => '/var/lib/simplesamlphp/log/',
-+    'datadir' => '/var/lib/simplesamlphp/data/',
-     'tempdir' => '/tmp/simplesaml',
- 
+-    'cachedir' => '/var/cache/simplesamlphp',
+-    //'loggingdir' => '/var/log/',
+-    //'datadir' => '/var/data/',
+-    //'tempdir' => '/tmp/simplesamlphp',
++    'cachedir' => '/var/cache/simplesamlphp/',
++    'loggingdir' => '/var/log/simplesamlphp/',
++    'datadir' => '/var/lib/simplesamlphp/',
++    'tempdir' => '/tmp/simplesamlphp',
 +    'attributenamemapdir' => '/etc/simplesamlphp/attributemap/',
-+
+ 
      /*
-      * Some information about the technical persons running this installation.
-      * The email address will be used as the recipient address for error reports, and
-@@ -293,7 +295,7 @@
-      *
+      * Certificate and key material can be loaded from different possible
+@@ -90,7 +91,7 @@ $config = [
+      * directory. Note that locations with no prefix included will be treated
+      * as file locations.
+      */
+-    'certdir' => 'cert/',
++    'certdir' => '/etc/simplesamlphp/certs/',
+ 
+     /* To load a certificate or key from the database, it should be specified
+      * as 'pdo://<id>' where <id> is the identifier in the database table that
+@@ -366,7 +367,7 @@ $config = [
+      * loggingdir above to 'null'.
       */
      'logging.level' => SimpleSAML\Logger::NOTICE,
 -    'logging.handler' => 'syslog',
@@ -27,7 +36,17 @@ diff -u -r simplesamlphp-1.18.5/config-templates/config.php simplesamlphp-1.18.5
  
      /*
       * Specify the format of the logs. Its use varies depending on the log handler used (for instance, you cannot
-@@ -578,7 +580,7 @@
+@@ -560,7 +561,8 @@ $config = [
+         'exampleauth' => false,
+         'core' => true,
+         'admin' => true,
+-        'saml' => true
++        'saml' => true,
++        'metarefresh' => true
+     ],
+ 
+ 
+@@ -655,7 +657,7 @@ $config = [
       * Options to override the default settings for php sessions.
       */
      'session.phpsession.cookiename' => 'SimpleSAML',
@@ -36,7 +55,7 @@ diff -u -r simplesamlphp-1.18.5/config-templates/config.php simplesamlphp-1.18.5
      'session.phpsession.httponly' => true,
  
      /*
-@@ -699,12 +701,14 @@
+@@ -776,12 +778,14 @@ $config = [
       *     ],
       * ],
       *
@@ -56,7 +75,7 @@ diff -u -r simplesamlphp-1.18.5/config-templates/config.php simplesamlphp-1.18.5
  
      /*
       * This value allows you to set a prefix for memcache-keys. The default
-@@ -714,7 +718,7 @@
+@@ -791,7 +795,7 @@ $config = [
       * than one instance is using memcache, you probably want to assign
       * a unique value per instance to this setting to avoid data collision.
       */
@@ -65,7 +84,7 @@ diff -u -r simplesamlphp-1.18.5/config-templates/config.php simplesamlphp-1.18.5
  
      /*
       * This value is the duration data should be stored in memcache. Data
-@@ -1051,7 +1055,7 @@
+@@ -1065,7 +1069,7 @@ $config = [
       * This option allows you to specify a directory for your metadata outside of the standard metadata directory
       * included in the standard distribution of the software.
       */
