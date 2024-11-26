@@ -1,4 +1,4 @@
-FROM php:8.3.13-apache
+FROM php:8.0.30-apache
 
 # Optimize recurrent builds by using a helper container runing apt-cache
 ARG USE_APT_CACHE
@@ -54,12 +54,12 @@ RUN set -eux; \
 		echo 'html_errors = Off'; \
     } > /usr/local/etc/php/conf.d/error-log.ini
 
-ENV SIMPLESAMLPHP_VERSION 2.3.3
+ENV SIMPLESAMLPHP_VERSION 2.1.6
 ENV SIMPLESAMLPHP_TYPE full
 ENV SIMPLESAMLPHP_URL https://github.com/simplesamlphp/simplesamlphp/releases/download/v${SIMPLESAMLPHP_VERSION}/simplesamlphp-${SIMPLESAMLPHP_VERSION}-${SIMPLESAMLPHP_TYPE}.tar.gz
-#slim ENV SIMPLESAMLPHP_SHA256 c36eb2daea92d5916dc177451edc980ee812352aff57de743fdb73e46d671d30
+#slim ENV SIMPLESAMLPHP_SHA256 cb12afdeb3e70bcd88e6ab103976dbff75ae79eb70120dbeaa9aa8b7666cdb8e
 #full
-ENV SIMPLESAMLPHP_SHA256 1001ebb34a52873802de26f762f1f51a9152aacc1a58d3d58828161b9ad3bc12
+ENV SIMPLESAMLPHP_SHA256 939c28c974ca0d5909c9142dde8e7a82c57f056671f6fa8b76d49510368d2ba4
 ENV SIMPLESAMLPHP_HOME /usr/share/simplesamlphp
 
 # Installation instructions adapted from Debian package
