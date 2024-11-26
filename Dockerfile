@@ -1,4 +1,4 @@
-FROM php:7.3.33-apache-buster
+FROM php:7.4.33-apache-bullseye
 
 # Optimize recurrent builds by using a helper container runing apt-cache
 ARG USE_APT_CACHE
