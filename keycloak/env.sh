@@ -15,7 +15,7 @@ fi
 : ${KEYCLOAK_ADMIN_PASSWORD:="password"}
 : ${KEYCLOAK_TEST_CLIENT:="sp-test"}
 : ${KEYCLOAK_ACCESS_TOKEN:=""}
-: ${SIMPLESAMLPHP_SP_METADATA_URL:="https://simplesamlphp.${EXTERNAL_DOMAIN}/simplesamlphp/module.php/saml/sp/metadata/${KEYCLOAK_TEST_CLIENT}"}
+: ${SIMPLESAMLPHP_SP_METADATA_URL:="https://simplesamlphp.${EXTERNAL_DOMAIN}/simplesamlphp/module.php/saml/sp/metadata.php/${KEYCLOAK_TEST_CLIENT}"}
 
 : ${KEYCLOAK_IN_CONTAINER:="false"}
 : ${KEYCLOAK_CONTAINER_NAME:="keycloak"}
