@@ -12,22 +12,6 @@ trap "rm -rf -- ""${SCRIPT_TMP_DIR}""" EXIT
 RUN_IN_CONTAINER="${KEYCLOAK_IN_CONTAINER}"
 RUN_IN_CONTAINER_NAME="${KEYCLOAK_CONTAINER_NAME}"
 
-if [[ ! -f "${KEYCLOAK_TRUSTSTORE_FILE}" ]]; then
-    if [[ -f "${KEYCLOAK_CA_FILE}" ]]; then
-        keytool -importcert -trustcacerts -noprompt \
-            -storepass "${KEYCLOAK_TRUSTSTORE_PASS}" \
-            -alias "${KEYCLOAK_CA_ALIAS}" \
-            -keystore "${KEYCLOAK_TRUSTSTORE_FILE}" \
-            -file "${KEYCLOAK_CA_FILE}"
-
-        KEYCLOAK_TRUSTSTORE_FILE_NAME=$(basename "${KEYCLOAK_TRUSTSTORE_FILE}")
-
-        if [[ ! -f "${KEYCLOAK_TRUSTSTORE_DIR}/${KEYCLOAK_TRUSTSTORE_FILE_NAME}" ]]; then
-            cp "${KEYCLOAK_TRUSTSTORE_FILE}" "${KEYCLOAK_TRUSTSTORE_DIR}/${KEYCLOAK_TRUSTSTORE_FILE_NAME}"
-        fi
-    fi
-fi
-
 #
 # Main
 #
