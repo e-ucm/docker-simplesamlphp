@@ -30,4 +30,6 @@ if [[ "$result" -ne 0 ]]; then
 fi
 
 export KEYCLOAK_IN_CONTAINER=true
+"${SIMPLE_SCRIPT_DIR}/keycloak/config-test-groups.sh"
+"${SIMPLE_SCRIPT_DIR}/keycloak/config-test-users.sh"
 "${SIMPLE_SCRIPT_DIR}/keycloak/config-saml-client.sh"

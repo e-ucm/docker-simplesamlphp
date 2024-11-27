@@ -16,6 +16,8 @@ fi
 : ${KEYCLOAK_TEST_CLIENT:="sp-test"}
 : ${KEYCLOAK_ACCESS_TOKEN:=""}
 : ${SIMPLESAMLPHP_SP_METADATA_URL:="https://simplesamlphp.${EXTERNAL_DOMAIN}/simplesamlphp/module.php/saml/sp/metadata.php/${KEYCLOAK_TEST_CLIENT}"}
+: ${KEYCLOAK_TEST_GROUPS:="group101,group102"}
+: ${KEYCLOAK_TEST_USERS:="testuser1,testuser2"}
 
 : ${KEYCLOAK_IN_CONTAINER:="false"}
 : ${KEYCLOAK_CONTAINER_NAME:="keycloak"}
