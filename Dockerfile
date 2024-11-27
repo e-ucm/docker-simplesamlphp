@@ -11,11 +11,23 @@ RUN set -eux; \
 	apt-get update; \
     apt-get install -y --no-install-recommends \
         msmtp \
+        wget \
     ; \
     rm -fr /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
     { \
         echo 'sendmail_path="/usr/bin/msmtp -C /etc/msmtp-php.conf --logfile - -a default -t"'; \
     } > /usr/local/etc/php/conf.d/msmtp.ini
+
+# set recommended PHP.ini settings
+# see https://secure.php.net/manual/en/opcache.installation.php
+RUN set -eux; \
+	docker-php-ext-enable opcache; \
+	{ \
+		echo 'opcache.memory_consumption=128'; \
+		echo 'opcache.interned_strings_buffer=8'; \
+		echo 'opcache.max_accelerated_files=4000'; \
+		echo 'opcache.revalidate_freq=2'; \
+	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 # Configure PHP sessions storage
 RUN set -eux; \
@@ -55,6 +67,7 @@ RUN set -eux; \
     mv "$SIMPLESAMLPHP_HOME-$SIMPLESAMLPHP_VERSION" "$SIMPLESAMLPHP_HOME"; \
     for dir in \
         /etc/simplesamlphp \
+        /var/cache/simplesamlphp \
         /var/lib/simplesamlphp/data \
         /var/lib/simplesamlphp/sessions \
         /var/log/simplesamlphp \
@@ -69,11 +82,13 @@ RUN set -eux; \
     done; \
     ln -s /etc/simplesamlphp "$SIMPLESAMLPHP_HOME/config"; \
     chgrp www-data \
+        /var/cache/simplesamlphp \
         /var/lib/simplesamlphp/data \
 		/var/lib/simplesamlphp/sessions \
         /var/log/simplesamlphp \
     ; \
 	chmod u=rwx,g=wx,o= \
+        /var/cache/simplesamlphp \
         /var/lib/simplesamlphp/data \
         /var/lib/simplesamlphp/sessions \
 		/var/log/simplesamlphp; \
@@ -85,13 +100,15 @@ RUN set -eux; \
     find /var/tmp/patches/simplesamlphp -type f -print0 | xargs -0 -n1 patch --verbose -p1 -i; \
     a2enmod remoteip; \
     a2enmod headers; \
+    a2enconf remoteip; \
     rm -fr /tmp/* /var/tmp/*;
+#
+#RUN set -eux; \
+#    { \
+#        echo 'auto_prepend_file=/etc/simplesamlphp/trust-forwarded-headers.php'; \
+#    } > /usr/local/etc/php/conf.d/trust-forwarded-headers.ini
 
-RUN set -eux; \
-    { \
-        echo 'auto_prepend_file=/etc/simplesamlphp/trust-forwarded-headers.php'; \
-    } > /usr/local/etc/php/conf.d/trust-forwarded-headers.ini
+VOLUME ["/etc/simplesamlphp", "/var/lib/simplesamlphp", "/var/log/simplesamlphp", "/var/cache/simplesamlphp"]
 
-VOLUME ["/var/lib/simplesamlphp", "/etc/simplesamlphp", "/var/lib/php/sessions"]
-ENTRYPOINT ["/usr/bin/entrypoint"]
-CMD ["/usr/bin/server", "start"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+CMD ["/usr/local/bin/server"]

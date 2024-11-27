@@ -26,6 +26,16 @@ function __simplesamlphp_set_config()
     sed -i -r -e "/^\s*['\"]$(__sed_escape_lhs "$key")['\"]/s/>(\s*)(.*)/>\1$(__sed_escape_rhs "$value"),/g" "$config_file"
 }
 
+function __genpass()
+{
+    if [[ $# -lt 1 ]]; then
+        echo >&2 'batch size missing';
+        return 1;
+    fi
+    local batch_size="$1"
+    echo $(tr -c -d '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' </dev/urandom | dd bs=${batch_size} count=1 2>/dev/null)
+}
+
 function simplesamlphp_configure()
 {
     if [[ $# -lt 1 ]]; then
@@ -36,19 +46,22 @@ function simplesamlphp_configure()
     local config_file="$1"
 
     if [[ -z "$SIMPLESAMLPHP_ADMIN_PASSWORD" ]]; then
+        local enabled=""
+        [[ -o errexit ]] && enabled="y";
         set +e
-        SIMPLESAMLPHP_ADMIN_PASSWORD=$(tr -c -d '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' </dev/urandom | dd bs=8 count=1 2>/dev/null)
-        set -e
+        SIMPLESAMLPHP_ADMIN_PASSWORD=$(__genpass 8)
+        [[ "${enabled}" == "y" ]] && set -e
     fi
 
     if [[ -z "$SIMPLESAMLPHP_SECRET_SALT" ]]; then
+        local enabled=""
+        [[ -o errexit ]] && enabled="y";
         set +e
-        SIMPLESAMLPHP_SECRET_SALT=$(tr -c -d '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' </dev/urandom | dd bs=32 count=1 2>/dev/null)
-        set -e
+        SIMPLESAMLPHP_SECRET_SALT=$(__genpass 32)
+        [[ "${enabled}" == "y" ]] && set -e
     fi
 
     __simplesamlphp_set_config $config_file "baseurlpath" "'$SIMPLESAMLPHP_BASEURLPATH'"
-
     __simplesamlphp_set_config $config_file "auth.adminpassword" "'$SIMPLESAMLPHP_ADMIN_PASSWORD'"
     __simplesamlphp_set_config $config_file "secretsalt" "'$SIMPLESAMLPHP_SECRET_SALT'"
 
@@ -124,67 +137,55 @@ function simplesamlphp_setup_apache2()
     fi
 
 
-    simplesamlphp_setup_apache2_configure "${SIMPLESAMLPHP_CONF_DIR}/apache2.conf" "/etc/apache2/conf-enabled/trust-proxy.conf"
+    simplesamlphp_setup_apache2_configure
 }
 
 function simplesamlphp_setup_apache2_configure()
 {
-    if [[ $# -lt 2 ]]; then
-        echo >&2 'Expected configs files paths';
-        return 1;
-    fi
+    local simplesamlphp_config_file="${SIMPLESAMLPHP_CONF_DIR}/apache2.conf"
+    sed -i -E "s|Alias ([^ ]+) (.*)|Alias ${SIMPLESAMLPHP_PATH} \2|" $simplesamlphp_config_file
 
-    local simplesamlphp_config_file="$1"
-    local trustproxy_config_file="$2"
-
-    if [[ ! -z "${SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME+x}" ]]; then
-        internal_proxy_ip=$(getent hosts $SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME | cut -d' ' -f1)
-        sed -i -E "s|RemoteIPInternalProxy(.*)|RemoteIPInternalProxy ${internal_proxy_ip}|" $simplesamlphp_config_file
-        sed -i -E "s|Alias ([^ ]+) (.*)|Alias ${SIMPLESAMLPHP_PATH} \2|" $simplesamlphp_config_file
-
-        echo "Define TRUST_PROXY_IP" > $trustproxy_config_file
-        echo 'ErrorLogFormat "[%t] [%l] [pid %P] %F: %E: [client %a] %M"' >> $trustproxy_config_file
-        echo 'LogFormat "%v:%p %a %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" vhost_combined' >> $trustproxy_config_file
-        echo 'LogFormat "%a %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\"" combined' >> $trustproxy_config_file
+    if [[ ! -z "${SIMPLESAMLPHP_ENABLE_GLOBAL+x}" ]]; then
+        a2enconf simplesamlphp
     else
-        cat /dev/null > $trustproxy_config_file
-    fi
+        a2disconf simplesamlphp
+    fi;
 
-    if [[ ! -z "${SIMPLESAMLPHP_ENABLE_DEFAULT_VHOST+x}" ]]; then
-        local begin_comment="# BEGIN SIMPLESAMLPHP"
-        local end_comment="# END SIMPLESAMLPHP"
-        local include_directive="Include /etc/apache2/conf-available/simplesamlphp.conf"
-        local config_already_applied=$(grep "${begin_comment}" /etc/apache2/sites-available/000-default.conf)
-        if [[ "$config_already_applied" == "0" ]]; then
-            sed -i "/${begin_comment}/,/${end_comment}/c\${begin_comment}\n${include_directive}\n${end_comment}" /etc/apache2/sites-available/000-default.conf
+    local begin_comment="# BEGIN SIMPLESAMLPHP"
+    local end_comment="# END SIMPLESAMLPHP"
+    local include_directive="Include /etc/apache2/conf-available/simplesamlphp.conf"
+    if [[ ! -z "${SIMPLESAMLPHP_ENABLE_VHOST+x}" ]]; then
+        local vhost_conf="/etc/apache2/sites-available/${SIMPLESAMLPHP_ENABLE_VHOST}.conf"
+
+        local enabled=""
+        [[ -o errexit ]] && enabled="y";
+        set +e
+        grep "${begin_comment}" "${vhost_conf}"
+        local config_already_applied=$?
+        [[ "${enabled}" == "y" ]] && set -e
+
+        if [[ $config_already_applied -ne 0 ]]; then
+            sed -i "/${begin_comment}/,/${end_comment}/c${begin_comment}\n${include_directive}\n${end_comment}" "${vhost_conf}";
         else
-            sed -i "/^<\/VirtualHost>/i \\${begin_comment}\n${include_directive}\n${end_comment}" /etc/apache2/sites-available/000-default.conf;
+            sed -i "/^<\/VirtualHost>/i \\${begin_comment}\n${include_directive}\n${end_comment}" "${vhost_conf}";
+        fi
+        echo "${SIMPLESAMLPHP_ENABLE_VHOST}" > "${SIMPLESAMLPHP_CONF_DIR}/apache2-enabled-vhost"
+    else
+        if [[ -f "${SIMPLESAMLPHP_CONF_DIR}/apache2-enabled-vhost" ]]; then
+            local enabled=""
+            [[ -o errexit ]] && enabled="y";
+            set +e
+            grep "${begin_comment}" "${vhost_conf}"
+            local config_already_applied=$?
+            [[ "${enabled}" == "y" ]] && set -e
+
+            if [[ $config_already_applied -ne 0 ]]; then
+
+                sed -i "/${begin_comment}/,/${end_comment}/c" "${vhost_conf}";
+            fi
+            rm "${SIMPLESAMLPHP_CONF_DIR}/apache2-enabled-vhost"
         fi
     fi
-}
-
-function simplesamlphp_setup_php_trust_forwarded_headers()
-{
-
-    cp "${SIMPLESAMLPHP_HOME}/config-templates/trust-forwarded-headers.php" "${SIMPLESAMLPHP_CONF_DIR}";
-    simplesamlphp_setup_php_trust_forwarded_headers_configure "${SIMPLESAMLPHP_CONF_DIR}/trust-forwarded-headers.php"
-}
-
-function simplesamlphp_setup_php_trust_forwarded_headers_configure()
-{
-    if [[ $# -lt 1 ]]; then
-        echo >&2 'Expected config file path';
-        return 1;
-    fi
-
-    local config_file="$1"
-
-    if [[ ! -z "${SIMPLESAMLPHP_INTERNAL_PROXY_HOSTNAME+x}" ]]; then
-        __simplesamlphp_set_config  $config_file "trustForwardedHeaders" "true"
-    else
-        __simplesamlphp_set_config  $config_file "trustForwardedHeaders" "false"
-    fi
-
 }
 
 function simplesamlphp_configure_sp()
@@ -222,17 +223,24 @@ EOF
     if [[ ! -z "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" ]]; then
         local idp_configured=$(php -r "require '${SIMPLESAMLPHP_CONF_DIR}/metadata/saml20-idp-remote.php'; echo array_key_exists('${SIMPLESAMLPHP_SP_IDP_ID}', \$metadata) ? 'true' : 'false';")
         if [[ "$idp_configured" != "true" ]]; then
-            echo "Getting SAML 2 IdP metadata from ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
+            local curl_extra_opts="--insecure"
+            local wait_for_extra_opts="--no-check-ca"
+            if [[ "${SIMPLESAMLPHP_CA_FILE:-x}" != "x" ]]; then
+                curl_extra_opts="--cacert ${SIMPLESAMLPHP_CA_FILE}"
+                wait_for_extra_opts="--ca-cert=${SIMPLESAMLPHP_CA_FILE}"
+            fi
+            wait-for "${wait_for_extra_opts}" -t 60 "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" -- echo "Getting SAML 2 IdP metadata from ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
             local launch_bash_options=$-
+
+            local enabled=""
+            [[ -o errexit ]] && enabled="y";
             set +e
             # Using --insecure to allow to use self-signed certificates
             local tmp_metadata_file=$(mktemp)
-            local curl_extra_opts="--insecure"
-            if [[ "${SIMPLESAMLPHP_CA_FILE:-x}" != "x" ]]; then
-                curl_extra_opts="--cacert ${SIMPLESAMLPHP_CA_FILE}"
-            fi
             curl --max-time 20 -f -s ${curl_extra_opts} "${SIMPLESAMLPHP_SP_IDP_METADATA_URL}" > ${tmp_metadata_file}
             local ret_value=$?
+            [[ "${enabled}" == "y" ]] && set -e
+
             if [[ ${ret_value} -ne 0 ]]; then
                 echo "There was a problem accessing ${SIMPLESAMLPHP_SP_IDP_METADATA_URL}"
                 exit 1;
@@ -274,5 +282,4 @@ EOF
 
 simplesamlphp_setup
 simplesamlphp_setup_apache2
-simplesamlphp_setup_php_trust_forwarded_headers
 simplesamlphp_configure_sp
