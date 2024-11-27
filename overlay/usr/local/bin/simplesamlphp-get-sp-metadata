@@ -23,7 +23,7 @@ function usage () {
   echo 1>&2 "List all ids of the configured SAML2 SPs or show the <SP id> metadata."
   echo 1>&2 "Options:"
   echo 1>&2 "  -h, --help"
-  echo 1>&2 "      Shows this help message and exists."
+  echo 1>&2 "      Displays this help message and exits."
 }
 
 LIST_LONG_OPTIONS=(
@@ -42,13 +42,21 @@ opts=$(getopt \
 
 eval set -- $opts
 
-# Sobreescribe el fichero de configuracion
-FUERZA=0
+# Force file config overwrite
+FORCE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --)
       shift
       break
+      ;;
+    -f | --force)
+      FORCE=1
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
       ;;
     *)
       usage
