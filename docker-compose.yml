@@ -92,7 +92,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./traefik:/etc/entrypoint"
       - traefik:/etc/traefik
-      - simva-dev:/simva
+      - development:/development
     ports:
       - "127.0.0.1:80:80"
       - "127.0.0.1:443:443"
@@ -126,7 +126,7 @@ services:
       - '/bin/bash'
       - '-c'
       - |
-        find /simva/ext -type f -iname '*.jar' -exec cp {} /opt/keycloak/providers \; ;
+        find /development/ext -type f -iname '*.jar' -exec cp {} /opt/keycloak/providers \; ;
         /opt/keycloak/bin/kc.sh build && /opt/keycloak/bin/kc.sh start --optimized --verbose
     environment:
       # Database
@@ -156,7 +156,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./keycloak:/scripts/keycloak/:ro
-      - simva-dev:/simva
+      - development:/development
     depends_on:
       - mariadb
       - traefik
@@ -221,10 +221,10 @@ services:
 
   dns:
     image: coredns/coredns:1.11.4
-    command: -conf /simva/coredns/Corefile
+    command: -conf /development/coredns/Corefile
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - simva-dev:/simva
+      - development:/development
     ports:
       - "${DNS_BIND_IP:-127.1.1.1}:53:53/udp"
     hostname: dns.${INTERNAL_DOMAIN:-internal.test}
@@ -240,12 +240,12 @@ volumes:
       type: none
       o: bind
       device: ./data/traefik
-  simva-dev:
+  development:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./data/simva
+      device: ./data/development
   keycloak-mariadb:
     driver: local
     driver_opts:

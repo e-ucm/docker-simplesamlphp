@@ -86,7 +86,7 @@ user_name=$1
 shift
 
 __keycloak_login
-user_id=$(__run_command /opt/keycloak/bin/kcadm.sh create users -r "${KEYCLOAK_REALM}" -s "username=${user_name}" -s "email=${user_name}@example.com" -s emailVerified=true -s enabled=true $@ -i)
+user_id=$(__run_command /opt/keycloak/bin/kcadm.sh create users -r "${KEYCLOAK_REALM}" -s "username=${user_name}" -s "firstName=${user_name}" -s "lastName=Test" -s "email=${user_name}@example.com" -s emailVerified=true -s enabled=true $@ -i)
 # set password
 if [[ ! -z "${user_password}" ]]; then
     __run_command /opt/keycloak/bin/kcadm.sh set-password -r "${KEYCLOAK_REALM}" "--userid=${user_id}" --new-password "${user_password}"

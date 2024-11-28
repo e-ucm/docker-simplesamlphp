@@ -8,10 +8,11 @@ set -euo pipefail
 : ${INTERNAL_DOMAIN:="internal.test"}
 : ${DNS_SERVERS:=8.8.8.8 8.8.4.4}
 : ${SIMVA_EXTENSIONS:="es.e-ucm.simva.keycloak.fullname-attribute-mapper es.e-ucm.simva.keycloak.policy-attribute-mapper"}
+: ${KEYCLOAK_TRUSTSTORE_VOL_MOUNT:="/development"}
 
 old_cwd=$PWD
 
-cd /simva
+cd "${KEYCLOAK_TRUSTSTORE_VOL_MOUNT}"
 
 if [[ ! -d "ext" ]]; then
     mkdir ext;
@@ -36,11 +37,11 @@ if [[ ! -f "jq" ]]; then
     chmod +x jq
 fi
 
-if [[ ! -d "/simva/coredns" ]]; then
-    mkdir -p /simva/coredns;
+if [[ ! -d "${KEYCLOAK_TRUSTSTORE_VOL_MOUNT}/coredns" ]]; then
+    mkdir -p "${KEYCLOAK_TRUSTSTORE_VOL_MOUNT}/coredns";
 fi
 
-cat > /simva/coredns/Corefile <<EOF
+cat > "${KEYCLOAK_TRUSTSTORE_VOL_MOUNT}/coredns/Corefile" <<EOF
 ${INTERNAL_DOMAIN}:53 {
     forward . 127.0.0.11
     log

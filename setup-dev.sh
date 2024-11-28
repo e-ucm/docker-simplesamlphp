@@ -6,7 +6,7 @@ SIMPLE_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null &&
 source "${SIMPLE_SCRIPT_DIR}/keycloak/common.sh"
 source "${SIMPLE_SCRIPT_DIR}/keycloak/env.sh"
 
-for d in ./data/{apache2,keycloak/mariadb,keycloak/providers,simplesamlphp,simva,traefik}; do
+for d in ./data/{apache2,development,keycloak/mariadb,keycloak/providers,simplesamlphp,traefik}; do
     if [[ ! -d "$d" ]]; then
         mkdir -p "$d"
     fi
