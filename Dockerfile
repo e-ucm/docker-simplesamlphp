@@ -102,11 +102,11 @@ RUN set -eux; \
     a2enmod headers; \
     a2enconf remoteip; \
     rm -fr /tmp/* /var/tmp/*;
-#
-#RUN set -eux; \
-#    { \
-#        echo 'auto_prepend_file=/etc/simplesamlphp/trust-forwarded-headers.php'; \
-#    } > /usr/local/etc/php/conf.d/trust-forwarded-headers.ini
+
+RUN set -eux; \
+    { \
+        echo 'auto_prepend_file=/etc/simplesamlphp/trust-forwarded-headers.php'; \
+    } > /usr/local/etc/php/conf.d/trust-forwarded-headers.ini
 
 VOLUME ["/etc/simplesamlphp", "/var/lib/simplesamlphp", "/var/log/simplesamlphp", "/var/cache/simplesamlphp"]
 

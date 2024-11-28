@@ -73,4 +73,4 @@ function __remoteip_set_config()
 #
 
 remoteip_setup_apache2
-#remoteip_setup_php_trust_forwarded_headers
+remoteip_setup_php_trust_forwarded_headers
