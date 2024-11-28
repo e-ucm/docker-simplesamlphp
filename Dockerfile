@@ -2,7 +2,7 @@ FROM php:7.4.33-apache-bullseye
 
 # Optimize recurrent builds by using a helper container runing apt-cache
 ARG USE_APT_CACHE
-ENV USE_APT_CACHE ${USE_APT_CACHE}
+ENV USE_APT_CACHE=${USE_APT_CACHE}
 RUN ([ ! -z $USE_APT_CACHE ] && echo 'Acquire::http { Proxy "http://172.17.0.1:3142"; };' >> /etc/apt/apt.conf.d/01proxy \
     && echo 'Acquire::HTTPS::Proxy "false";' >> /etc/apt/apt.conf.d/01proxy) || true
 
@@ -54,10 +54,10 @@ RUN set -eux; \
 		echo 'html_errors = Off'; \
     } > /usr/local/etc/php/conf.d/error-log.ini
 
-ENV SIMPLESAMLPHP_VERSION 1.19.9
-ENV SIMPLESAMLPHP_URL https://github.com/simplesamlphp/simplesamlphp/releases/download/v${SIMPLESAMLPHP_VERSION}/simplesamlphp-${SIMPLESAMLPHP_VERSION}.tar.gz
-ENV SIMPLESAMLPHP_SHA256 f7571dfe363423744d36e47c90e6dd1b1a96acab8b15383b3731e504b6545a9d
-ENV SIMPLESAMLPHP_HOME /usr/share/simplesamlphp
+ENV SIMPLESAMLPHP_VERSION=1.19.9
+ENV SIMPLESAMLPHP_URL=https://github.com/simplesamlphp/simplesamlphp/releases/download/v${SIMPLESAMLPHP_VERSION}/simplesamlphp-${SIMPLESAMLPHP_VERSION}.tar.gz
+ENV SIMPLESAMLPHP_SHA256=f7571dfe363423744d36e47c90e6dd1b1a96acab8b15383b3731e504b6545a9d
+ENV SIMPLESAMLPHP_HOME=/usr/share/simplesamlphp
 
 # Installation instructions adapted from Debian package
 RUN set -eux; \
