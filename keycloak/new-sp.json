@@ -21,8 +21,8 @@
       "config": {
         "attribute.nameformat": "Basic",
         "user.attribute": "username",
-        "friendly.name": "username",
-        "attribute.name": "User's username"
+        "friendly.name": "User's username",
+        "attribute.name": "username"
       }
     },
     {
@@ -33,7 +33,7 @@
       "config": {
         "attribute.nameformat": "Basic",
         "friendly.name": "User's Fullname",
-        "attribute.name": "full_name"
+        "attribute.name": "fullname"
       }
     },
     {
@@ -45,7 +45,7 @@
         "attribute.nameformat": "Basic",
         "user.attribute": "emailVerified",
         "friendly.name": "Represent if the user's email has been verified",
-        "attribute.name": "email_verified"
+        "attribute.name": "mail_verified"
       }
     },
     {
@@ -69,7 +69,7 @@
         "attribute.nameformat": "Basic",
         "user.attribute": "email",
         "friendly.name": "User email",
-        "attribute.name": "email"
+        "attribute.name": "mail"
       }
     }
   ]
